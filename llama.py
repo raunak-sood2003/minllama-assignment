@@ -44,7 +44,7 @@ class RMSNorm(torch.nn.Module):
             torch.Tensor: The normalized tensor.
         """
         # todo
-        # Cite Llama GitHub!
+        # From LLaMA GitHub: https://github.com/meta-llama/llama/blob/main/llama/model.py#L63
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdims = True) + self.eps)
 
     def forward(self, x):
@@ -290,7 +290,7 @@ class Llama(LlamaPreTrainedModel):
 
             if temperature == 0.0:
                 # select the single most likely index
-                idx_next = torch.argmax(logits[:, -1], dim = -1)
+                idx_next = torch.argmax(logits, dim = -1, keepdims = True)
             else:
                 '''
                 Perform temperature sampling:
@@ -301,11 +301,11 @@ class Llama(LlamaPreTrainedModel):
 
                 Note that we are not using top-k sampling/nucleus sampling in this procedure.
                 '''
-                probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-                idx_next = torch.argmax(probs)
+                probs = torch.softmax(logits / temperature, dim = -1)
+                idx_next = torch.multinomial(probs, num_samples = 1)
                 
             # append sampled index to the running sequence and continue
-            idx = torch.cat((idx, idx_next), dim=1)
+            idx = torch.cat((idx, idx_next), dim = 1)
 
 
         return idx
